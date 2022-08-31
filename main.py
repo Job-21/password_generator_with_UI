@@ -1,6 +1,7 @@
 import tkinter
 from tkinter import messagebox
 import pyperclip
+import json
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 
 
@@ -41,21 +42,58 @@ def generate_password():
 
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 
+# Searches from the json file
+def search():
+    try:
+        with open("password_info.json", "r") as searched:
+            data = json.load(searched)
+            index = website_entry.get().upper()
+    except FileNotFoundError as e:
+        messagebox.showinfo(title=e, message="Please first add something to the database.")
+    else:
+        try:
+            new_dictionary = data[index]
+        except KeyError as error_sms:
+            messagebox.showinfo(title=f"KeyError {error_sms}.",
+                                message="This website is not registered in your database.")
+        else:
+            mail = new_dictionary["email"]
+            passkey = new_dictionary["password"]
+            messagebox.showinfo(title="DETAILS", message=f"Website: {index}\n Email: {mail} \nPassword: {passkey}")
+
 
 def save_to_file():
     web_name = website_entry.get()
     email_name = email_entry.get()
     password = password_entry.get()
+    new_data = {
+        web_name.upper():{
+            "email": email_name,
+            "password": password
+        }
+    }
+
     sms = f"These are your details Website: {web_name}, Email: {email_name}, Password: {password}"
     is_ok = messagebox.askokcancel(title=web_name, message=sms)
     if len(web_name) == 0 or len(email_name) == 0 or len(password) == 0:
         messagebox.showinfo(title="Info", message="DON'T LEAVE THE FIELDS EMPTY.")
     else:
         if is_ok:
-            with open("password_data.txt", "a") as details:
-                details.write("\n")
+            try:
+                with open("password_info.json", "r") as details:
+                    data = json.load(details)
+            except FileNotFoundError:
+                with open("password_info.json", "w") as details:
+                    json.dump(new_data, details, indent=4)
+                    # print(data)
+            else:
+                data.update(new_data)
+                with open("password_info.json", "w") as details:
+                    json.dump(data, details, indent=4)
+                    # details.write("\n")
 
-                details.write(f"{web_name.upper()} | {email_name} | {password}")
+                    # details.write(f"{web_name.upper()} | {email_name} | {password}")
+            finally:
                 website_entry.delete(0, len(web_name))
                 password_entry.delete(0, len(password))
 
@@ -101,6 +139,9 @@ password_entry = tkinter.Entry(width=40)
 password_entry.grid(column=1, row=3)
 
 # Buttons
+search_button = tkinter.Button(text="Search", font=font_style, command=search)
+search_button.grid(column=2, row=2)
+
 generate_password_button = tkinter.Button(text="Generate Password", font=font_style, command=generate_password)
 generate_password_button.grid(column=2, row=3)
 
